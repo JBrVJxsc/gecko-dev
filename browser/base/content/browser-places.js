@@ -480,7 +480,7 @@ var PlacesCommandHook = {
    */
   async bookmarkPage() {
     let browser = gBrowser.selectedBrowser;
-    let url = new URL(browser.currentURI.spec);
+    let url = URL.fromURI(browser.currentURI);
     let info = await PlacesUtils.bookmarks.fetch({ url });
     let isNewBookmark = !info;
     let showEditUI = !isNewBookmark || StarUI.showForNewBookmarks;
@@ -1379,7 +1379,7 @@ var PlacesToolbarHelper = {
     }
 
     addData(PlacesUtils.TYPE_X_MOZ_URL, 0);
-    addData(PlacesUtils.TYPE_UNICODE, 0);
+    addData(PlacesUtils.TYPE_PLAINTEXT, 0);
     addData(PlacesUtils.TYPE_HTML, 0);
   },
 };

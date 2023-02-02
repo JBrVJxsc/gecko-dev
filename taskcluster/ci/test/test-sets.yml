@@ -92,6 +92,7 @@ browsertime:
     - browsertime-first-install
     - browsertime-grandprix
     - browsertime-responsiveness
+    - browsertime-regression-tests
 
 browsertime-profiling:
     - browsertime-tp6-profiling
@@ -276,9 +277,6 @@ mingwclang-tests-opt:
     - cppunit
     - mochitest-chrome-gpu
     - mochitest-plain-gpu
-
-windows-aarch64-tests:
-    - mochitest-media
 
 windows-talos:
     - talos-bcv

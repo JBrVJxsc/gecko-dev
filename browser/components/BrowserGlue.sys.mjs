@@ -605,6 +605,7 @@ let JSWINDOWACTORS = {
       esModuleURI: "resource:///actors/MigrationWizardChild.sys.mjs",
       events: {
         "MigrationWizard:Init": { wantUntrusted: true },
+        "MigrationWizard:BeginMigration": { wantsUntrusted: true },
       },
     },
 
@@ -3516,7 +3517,7 @@ BrowserGlue.prototype = {
   _migrateUI: function BG__migrateUI() {
     // Use an increasing number to keep track of the current migration state.
     // Completely unrelated to the current Firefox release number.
-    const UI_VERSION = 134;
+    const UI_VERSION = 135;
     const BROWSER_DOCURL = AppConstants.BROWSER_CHROME_URL;
 
     const PROFILE_DIR = Services.dirsvc.get("ProfD", Ci.nsIFile).path;
@@ -4323,6 +4324,21 @@ BrowserGlue.prototype = {
     }
 
     // Migration 134 was removed because it was no longer necessary.
+
+    if (currentUIVersion < 135 && AppConstants.platform == "linux") {
+      // Avoid changing titlebar setting for users that used to had it off.
+      try {
+        if (!Services.prefs.prefHasUserValue("browser.tabs.inTitlebar")) {
+          let de = Services.appinfo.desktopEnvironment;
+          let oldDefault = de.includes("gnome") || de.includes("pantheon");
+          if (!oldDefault) {
+            Services.prefs.setIntPref("browser.tabs.inTitlebar", 0);
+          }
+        }
+      } catch (e) {
+        console.error("Error migrating tabsInTitlebar setting", e);
+      }
+    }
 
     // Update the migration version.
     Services.prefs.setIntPref("browser.migration.version", UI_VERSION);

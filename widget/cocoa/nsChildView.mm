@@ -4457,8 +4457,7 @@ static CFTypeRefPtr<CFURLRef> GetPasteLocation(NSPasteboard* aPasteboard) {
   nsAutoRetainCocoaObject kungFuDeathGrip(self);
 
   // Make sure that the service will accept strings or HTML.
-  if (![types containsObject:[UTIHelper stringFromPboardType:NSStringPboardType]] &&
-      ![types containsObject:[UTIHelper stringFromPboardType:NSPasteboardTypeString]] &&
+  if (![types containsObject:[UTIHelper stringFromPboardType:NSPasteboardTypeString]] &&
       ![types containsObject:[UTIHelper stringFromPboardType:NSPasteboardTypeHTML]]) {
     return NO;
   }
@@ -4514,7 +4513,7 @@ static CFTypeRefPtr<CFURLRef> GetPasteLocation(NSPasteboard* aPasteboard) {
   if (NS_FAILED(rv)) return NO;
   trans->Init(nullptr);
 
-  trans->AddDataFlavor(kUnicodeMime);
+  trans->AddDataFlavor(kTextMime);
   trans->AddDataFlavor(kHTMLMime);
 
   rv = nsClipboard::TransferableFromPasteboard(trans, pboard);

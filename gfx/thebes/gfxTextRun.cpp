@@ -25,13 +25,12 @@
 #include "mozilla/Likely.h"
 #include "gfx2DGlue.h"
 #include "mozilla/gfx/Logging.h"  // for gfxCriticalError
+#include "mozilla/intl/String.h"
 #include "mozilla/intl/UnicodeProperties.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Unused.h"
 #include "SharedFontList-impl.h"
 #include "TextDrawTarget.h"
-
-#include <unicode/unorm2.h>
 
 #ifdef XP_WIN
 #  include "gfxWindowsPlatform.h"
@@ -3080,12 +3079,9 @@ already_AddRefed<gfxFont> gfxFontGroup::FindFontForChar(
     if (aPrevMatchedFont->HasCharacter(aCh) || IsDefaultIgnorable(aCh)) {
       return do_AddRef(aPrevMatchedFont);
     }
-    // Get the singleton NFC normalizer; this does not need to be deleted.
-    static UErrorCode err = U_ZERO_ERROR;
-    static const UNormalizer2* nfc = unorm2_getNFCInstance(&err);
     // Check if this char and preceding char can compose; if so, is the
     // combination supported by the current font.
-    int32_t composed = unorm2_composePair(nfc, aPrevCh, aCh);
+    uint32_t composed = intl::String::ComposePairNFC(aPrevCh, aCh);
     if (composed > 0 && aPrevMatchedFont->HasCharacter(composed)) {
       return do_AddRef(aPrevMatchedFont);
     }
@@ -3254,6 +3250,15 @@ already_AddRefed<gfxFont> gfxFontGroup::FindFontForChar(
     // If the provided glyph matches the preference, accept the font.
     if (hasColorGlyph == PrefersColor(presentation)) {
       *aMatchType = t;
+      return true;
+    }
+    // If the character was a TextDefault char, but the next char is VS16,
+    // and the font is a COLR font that supports both these codepoints, then
+    // we'll assume it knows what it is doing (eg Twemoji Mozilla keycap
+    // sequences).
+    // TODO: reconsider all this as part of any fix for bug 543200.
+    if (aNextCh == kVariationSelector16 && emojiPresentation == TextDefault &&
+        f->HasCharacter(aNextCh) && f->GetFontEntry()->TryGetColorGlyphs()) {
       return true;
     }
     // Otherwise, remember the first potential fallback, but keep searching.

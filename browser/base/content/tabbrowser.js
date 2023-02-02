@@ -329,7 +329,7 @@
       return this._featureCalloutPanelId;
     },
 
-    _instantiateFeatureCalloutTour(location, panelId) {
+    _instantiateFeatureCalloutTour(browser, panelId) {
       this._featureCalloutPanelId = panelId;
       const { FeatureCallout } = ChromeUtils.importESModule(
         "resource:///modules/FeatureCallout.sys.mjs"
@@ -338,6 +338,7 @@
       // only use PDF.js pref value when navigating to PDF viewer
       this._featureCallout = new FeatureCallout({
         win: window,
+        browser,
         prefName: "browser.pdfjs.feature-tour",
         page: "chrome",
       });
@@ -1079,7 +1080,7 @@
         this._featureCallout &&
         this._featureCalloutPanelId !== newTab.linkedPanel
       ) {
-        this._featureCallout._endTour(true);
+        this._featureCallout.endTour(true);
         this._featureCallout = null;
       }
 
@@ -1090,10 +1091,7 @@
         !this._featureCallout &&
         newBrowser.currentURI.spec.endsWith(".pdf")
       ) {
-        this._instantiateFeatureCalloutTour(
-          newBrowser.currentURI,
-          newTab.linkedPanel
-        );
+        this._instantiateFeatureCalloutTour(newBrowser, newTab.linkedPanel);
         window.gBrowser.featureCallout.showFeatureCallout();
       }
 
@@ -1651,6 +1649,14 @@
       }
 
       return this._setTabLabel(aTab, title, { isContentTitle, isURL });
+    },
+
+    // While an auth prompt from a base domain different than the current sites is open, we do not want to show the tab title of the current site,
+    // but of the origin that is requesting authentication.
+    // This is to prevent possible auth spoofing scenarios.
+    // See bug 791594 for reference.
+    setTabLabelForAuthPrompts(aTab, aLabel) {
+      return this._setTabLabel(aTab, aLabel);
     },
 
     _setTabLabel(aTab, aLabel, { beforeTabOpen, isContentTitle, isURL } = {}) {
@@ -6748,9 +6754,9 @@
             gBrowser.featureCallout &&
             (gBrowser.featureCalloutPanelId !==
               gBrowser.selectedTab.linkedPanel ||
-              gBrowser.featureCallout.source !== aLocation.spec)
+              !aLocation.spec.endsWith(".pdf"))
           ) {
-            gBrowser.featureCallout._endTour(true);
+            gBrowser.featureCallout.endTour(true);
             gBrowser.featureCallout = null;
           }
 
@@ -6759,7 +6765,7 @@
           // for callout messages on every change of tab location.
           if (!gBrowser.featureCallout && aLocation.spec.endsWith(".pdf")) {
             gBrowser.instantiateFeatureCalloutTour(
-              aLocation,
+              gBrowser.selectedBrowser,
               gBrowser.selectedTab.linkedPanel
             );
             gBrowser.featureCallout.showFeatureCallout();
